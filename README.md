@@ -47,6 +47,20 @@ To run this project locally, you need Python installed.
 3.  **Access the application:**
     Open your web browser and navigate to `http://localhost:8000`. You may need to allow camera access for the site.
 
+4.  **Testing on a mobile device (e.g., iPhone):**
+    To run the inference on a mobile device, you need to serve the application over HTTPS, as browsers require a secure context to access the camera. `ngrok` is a good tool for this.
+
+    First, start the local server as described above:
+    ```bash
+    python -m http.server 8000
+    ```
+
+    Then, in a new terminal, use `ngrok` to create a public HTTPS tunnel to your local server:
+    ```bash
+    ngrok http 8000
+    ```
+    `ngrok` will provide you with a public HTTPS URL. Open this URL on your mobile device to access the application and use the camera for real-time detection.
+
 ## File Descriptions
 
 - **`index.html`**: The main HTML file that structures the web page.

@@ -50,39 +50,50 @@ function preprocessFrame() {
 }
 
 
-function drawBoxes(detections) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function handleDetections(detections) {
+  const banner = document.getElementById("banner");
+  if (!banner) return;
 
-  drawMask();  // ✅ 추가
-
-  const highConfDetections = detections.filter(det => det.score >= 0.5);
-  const count = highConfDetections.length;
-
-  document.getElementById("banner").style.display = count >= 3 ? "block" : "none";
+  banner.style.display = detections.length > 0 ? "block" : "none";
 }
 
 function drawMask() {
   const w = canvas.width;
   const h = canvas.height;
 
-  // 마스크 크기: 화면 가운데 정사각형
-  const boxSize = Math.min(w, h) * 0.6;
+  const boxSize = Math.min(w, h) * 0.5;
+  const verticalOffset = -h * 0.1;
   const left = (w - boxSize) / 2;
-  const top = (h - boxSize) / 2;
+  const top = (h - boxSize) / 2 + verticalOffset;
 
+  // ✅ 1. 매 프레임 clear
+  ctx.clearRect(0, 0, w, h);
+
+  // ✅ 2. 전체 반투명 검은색 덮기
   ctx.save();
-  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+  ctx.fillRect(0, 0, w, h);
+
+  // ✅ 3. 중앙 사각형 영역을 투명하게 뚫음
+  ctx.globalCompositeOperation = "destination-out";
   ctx.beginPath();
-  ctx.rect(0, 0, w, h); // 전체 어둡게
-  ctx.rect(left, top, boxSize, boxSize); // 가운데 뚫음
-  ctx.fill("evenodd"); // 뚫기 모드
+  ctx.rect(left, top, boxSize, boxSize);
+  ctx.fill();
+
+  // ✅ 4. 다시 선을 그릴 수 있도록 복구
+  ctx.globalCompositeOperation = "source-over";
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(left, top, boxSize, boxSize);
+
   ctx.restore();
 }
 
 
+
 function postprocess(outputTensor) {
   const raw = outputTensor.data;
-  const numDet = raw.length / 6; // 혹은 85로 나누거나, 구조를 로그로 확인
+  const numDet = raw.length / 6;
   const detections = [];
 
   for (let i = 0; i < raw.length; i += 6) {
@@ -91,12 +102,13 @@ function postprocess(outputTensor) {
     const w = raw[i + 2];
     const h = raw[i + 3];
     const obj = raw[i + 4];
-    const cls = raw[i + 5];  // ❗️이게 확률인지 index인지 확인 필요
+    const cls = raw[i + 5];  // 단일 클래스이므로 거의 항상 1에 가까움
 
-    const score = obj * cls;
+    // 단일 클래스 모델 → cls는 무시하고 obj만 쓰자
+    const score = obj;
 
-    // 너무 많은 오탐 방지
-    if (obj > 0.5 && cls > 0.8 && w * h > 0.001 && w * h < 0.5) {
+    // 완화된 조건
+    if (score > 0.4 && w * h > 0.0003 && w * h < 0.6) {
       detections.push({
         label: "ECOQCODE",
         score,
@@ -112,18 +124,19 @@ function postprocess(outputTensor) {
 
 async function detectLoop() {
   if (!session) return;
+
   const tensor = preprocessFrame();
   const outputMap = await session.run({ images: tensor });
 
-  // 🔥 여기가 중요
   const outputName = session.outputNames[0];
   const outputTensor = outputMap[outputName];
 
-  const results = postprocess(outputTensor);
-  drawBoxes(results);
+  const results = postprocess(outputTensor);  // ✅ 이 줄 추가!
+  drawMask();
+  handleDetections(results);
+
   requestAnimationFrame(detectLoop);
 }
-
 
 async function main() {
   await initCamera();

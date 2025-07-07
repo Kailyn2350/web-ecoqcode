@@ -46,11 +46,11 @@ function preprocessFrame() {
 }
 
 
-function handleDetections(detections) {
+function handleDetections(isDetected) {
   const banner = document.getElementById("banner");
   if (!banner) return;
 
-  banner.style.display = detections.length > 0 ? "block" : "none";
+  banner.style.display = isDetected ? "block" : "none";
 }
 
 function drawMask() {

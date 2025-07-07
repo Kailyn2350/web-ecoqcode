@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>EcoQCode Detector</title>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="top-bar">
+    <img src="ecoqcode.jpg" alt="EcoQCode Logo" class="logo" />
+  </div>
+
+  <div class="container">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+    <div id="banner" class="detect-banner">ECOQCODE Detected</div> <!-- 📌 배너 -->
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
